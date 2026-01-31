@@ -36,7 +36,7 @@ function resizeCanvas() {
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     DEAD_ZONE_RADIUS = canvas.width / 4;           // red center = 50% width diameter
-    COOLDOWN_RADIUS = canvas.width / 16;       // blue zones: diameter = 1/8 width (12% of width)
+    COOLDOWN_RADIUS = canvas.width / 12;       // blue zones: diameter = 1/6 width (17% of width)
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
@@ -46,7 +46,7 @@ class Particle {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        const speed = (5 + Math.random() * 12.5) * 1.3;  // +30% faster (was 5–17.5 → now 6.5–22.75 px/s)
+        const speed = (5 + Math.random() * 15) * 1.3;  // +30% faster (was 5–17.5 → now 6.5–22.75 px/s)
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
