@@ -36,7 +36,7 @@ function resizeCanvas() {
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     DEAD_ZONE_RADIUS = canvas.width / 4;           // red center = 50% width diameter
-    COOLDOWN_RADIUS = canvas.width / 5;            // blue zones = 1/5 width radius = 20% width diameter
+    COOLDOWN_RADIUS = canvas.width / 16;       // blue zones: diameter = 1/8 width (12% of width)
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
