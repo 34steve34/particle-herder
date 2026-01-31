@@ -4,10 +4,12 @@
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
+
 html, body {
     height: 100%;
     overflow: hidden;
 }
+
 body {
     background: #000;
     display: flex;
@@ -15,9 +17,11 @@ body {
     align-items: center;
     min-height: 100vh;
     font-family: 'Courier New', monospace;
+    overflow: hidden;
     touch-action: none;
-    orientation: portrait; /* hint */
+    orientation: portrait; /* hint for browsers */
 }
+
 #gameContainer {
     position: relative;
     width: 100vw;
@@ -25,6 +29,7 @@ body {
     height: 100vh;
     max-height: 800px;
 }
+
 canvas {
     display: block;
     width: 100%;
@@ -32,13 +37,99 @@ canvas {
     background: #000;
     touch-action: none;
 }
-/* ... rest of your existing styles unchanged ... */
 
-/* Blue cooldown zone */
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #fff;
+    font-size: 24px;
+    pointer-events: none;
+    text-shadow: 0 0 10px #fff;
+}
+
+#gameOver {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    gap: 30px;
+}
+
+#gameOver.show {
+    display: flex;
+}
+
+#gameOver h1 {
+    font-size: 48px;
+    text-shadow: 0 0 20px #fff;
+}
+
+#gameOver .score {
+    font-size: 32px;
+}
+
+#gameOver .highScores {
+    font-size: 18px;
+    text-align: left;
+}
+
+#gameOver .highScores div {
+    margin: 5px 0;
+}
+
+#restartBtn {
+    padding: 15px 40px;
+    font-size: 24px;
+    background: #fff;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    box-shadow: 0 0 20px #fff;
+}
+
+#restartBtn:active {
+    transform: scale(0.95);
+}
+
+#tapEffect {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    display: none;
+}
+
+/* Blue cooldown zone outline (no fill) */
 .cooldown-zone {
     position: absolute;
     border: 2px solid rgba(0, 180, 255, 0.7);
     border-radius: 50%;
     pointer-events: none;
     box-sizing: border-box;
+}
+
+/* Tap pulse animation */
+@keyframes tapPulse {
+    0% {
+        transform: scale(0.5);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
 }

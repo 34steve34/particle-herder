@@ -21,18 +21,27 @@ const PARTICLE_SIZE = 4;
 const WALL_MARGIN = 20;
 let DEAD_ZONE_RADIUS = 0;
 const CLICK_PAUSE_DURATION = 300;
+const COOLDOWN_DURATION = 4000; // 4 seconds
+const COOLDOWN_RADIUS = 0; // set in resize
+let cooldownZones = []; // {x, y, createdAt, element?}
 
-// Set canvas size
+// Force portrait orientation hint (best-effort)
+if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('portrait').catch(() => {});
+}
+
+// Set canvas size + cooldown radius
 function resizeCanvas() {
     const container = document.getElementById('gameContainer');
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
-    DEAD_ZONE_RADIUS = canvas.width / 4;  // 50% width diameter
+    DEAD_ZONE_RADIUS = canvas.width / 4;           // red center = 50% width diameter
+    COOLDOWN_RADIUS = canvas.width / 5;            // blue zones = 1/5 width radius = 20% width diameter
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// Particle class
+// Particle class (unchanged except using normalized influence)
 class Particle {
     constructor(x, y) {
         this.x = x;
@@ -69,8 +78,7 @@ class Particle {
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < 1) return;
 
-        // V2.0: Normalize by % screen diagonal (device/aspect agnostic)
-        const diagonal = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+        const diagonal = Math.sqrt(canvas.width**2 + canvas.height**2);
         const maxDistance = diagonal * 0.4;
         const influenceStrength = Math.max(0, 1 - Math.pow(distance / maxDistance, 1.5));
         const turnFactor = influenceStrength * 0.45;
@@ -88,7 +96,7 @@ class Particle {
     }
 }
 
-// High scores – stored as integers (×10)
+// High scores (unchanged)
 function getHighScores() {
     const scores = localStorage.getItem('particleHerderScores');
     return scores ? JSON.parse(scores) : [];
@@ -109,19 +117,49 @@ function displayHighScores(scores) {
         scores.map((score, index) => `<div>${index + 1}. ${score}</div>`).join('');
 }
 
-// Tap effect
+// Tap effect (white pulse)
 function showTapEffect(x, y) {
     const rect = canvas.getBoundingClientRect();
     tapEffect.style.left = (x - 20) + 'px';
     tapEffect.style.top = (y - 20) + 'px';
     tapEffect.style.display = 'block';
     tapEffect.style.animation = 'none';
+    setTimeout(() => tapEffect.style.animation = 'tapPulse 0.3s ease-out', 10);
+    setTimeout(() => tapEffect.style.display = 'none', 300);
+}
+
+// Create blue cooldown outline
+function createCooldownZone(x, y) {
+    const zone = document.createElement('div');
+    zone.className = 'cooldown-zone';
+    zone.style.left = (x - COOLDOWN_RADIUS) + 'px';
+    zone.style.top = (y - COOLDOWN_RADIUS) + 'px';
+    zone.style.width = (COOLDOWN_RADIUS * 2) + 'px';
+    zone.style.height = (COOLDOWN_RADIUS * 2) + 'px';
+    document.getElementById('gameContainer').appendChild(zone);
+
+    const createdAt = performance.now();
+    cooldownZones.push({x, y, createdAt, element: zone});
+
+    // Auto-remove after duration
     setTimeout(() => {
-        tapEffect.style.animation = 'tapPulse 0.3s ease-out';
-    }, 10);
-    setTimeout(() => {
-        tapEffect.style.display = 'none';
-    }, 300);
+        if (zone.parentNode) zone.remove();
+        cooldownZones = cooldownZones.filter(z => z.createdAt !== createdAt);
+    }, COOLDOWN_DURATION);
+}
+
+// Check if tap is inside any active cooldown zone
+function isInCooldownZone(tapX, tapY) {
+    const now = performance.now();
+    for (const zone of cooldownZones) {
+        if (now - zone.createdAt > COOLDOWN_DURATION) continue;
+        const dx = tapX - zone.x;
+        const dy = tapY - zone.y;
+        if (Math.sqrt(dx*dx + dy*dy) <= COOLDOWN_RADIUS) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Handle tap/click
@@ -133,21 +171,44 @@ function handleTap(e) {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    let tapX, tapY;
+    let tapX, tapY, clientX, clientY;
     if (e.type.startsWith('touch')) {
-        tapX = (e.touches[0].clientX - rect.left) * scaleX;
-        tapY = (e.touches[0].clientY - rect.top) * scaleY;
-        showTapEffect(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+        tapX = (clientX - rect.left) * scaleX;
+        tapY = (clientY - rect.top) * scaleY;
     } else {
-        tapX = (e.clientX - rect.left) * scaleX;
-        tapY = (e.clientY - rect.top) * scaleY;
-        showTapEffect(e.clientX - rect.left, e.clientY - rect.top);
+        clientX = e.clientX;
+        clientY = e.clientY;
+        tapX = (clientX - rect.left) * scaleX;
+        tapY = (clientY - rect.top) * scaleY;
     }
 
+    showTapEffect(clientX - rect.left, clientY - rect.top);
+
+    // Check central dead zone
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const distanceFromCenter = Math.sqrt((tapX - centerX) ** 2 + (tapY - centerY) ** 2);
-    if (distanceFromCenter <= DEAD_ZONE_RADIUS) return;
+    const distToCenter = Math.sqrt((tapX - centerX)**2 + (tapY - centerY)**2);
+    if (distToCenter <= DEAD_ZONE_RADIUS) return;
+
+    // Check blue cooldown zones
+    if (isInCooldownZone(tapX, tapY)) {
+        // Still pause timer even if influence is blocked
+        if (isPaused) pausedTime += CLICK_PAUSE_DURATION;
+        isPaused = true;
+        lastPauseStart = performance.now();
+        setTimeout(() => {
+            if (isPaused) {
+                pausedTime += CLICK_PAUSE_DURATION;
+                isPaused = false;
+            }
+        }, CLICK_PAUSE_DURATION);
+        return;
+    }
+
+    // Apply influence + pause + create blue zone
+    particles.forEach(p => p.applyTapInfluence(tapX, tapY));
 
     if (isPaused) pausedTime += CLICK_PAUSE_DURATION;
     isPaused = true;
@@ -159,13 +220,13 @@ function handleTap(e) {
         }
     }, CLICK_PAUSE_DURATION);
 
-    particles.forEach(p => p.applyTapInfluence(tapX, tapY));
+    createCooldownZone(tapX, tapY);
 }
 
 canvas.addEventListener('click', handleTap);
 canvas.addEventListener('touchstart', handleTap);
 
-// Game loop
+// Game loop (add drawing of blue zones is handled via DOM elements above)
 let lastFrameTime = 0;
 
 function gameLoop(timestamp) {
@@ -200,17 +261,19 @@ function gameLoop(timestamp) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Walls
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(WALL_MARGIN, 0); ctx.lineTo(WALL_MARGIN, canvas.height); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(canvas.width - WALL_MARGIN, 0); ctx.lineTo(canvas.width - WALL_MARGIN, canvas.height); ctx.stroke();
 
+    // Red center
     ctx.strokeStyle = '#ff0000';
-    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(canvas.width / 2, canvas.height / 2, DEAD_ZONE_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
 
+    // Particles
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.update(deltaTime);
@@ -227,6 +290,8 @@ function gameLoop(timestamp) {
 function startGame() {
     gameActive = true;
     particles = [];
+    cooldownZones.forEach(z => z.element?.remove());
+    cooldownZones = [];
     startTime = performance.now();
     lastSpawnTime = startTime;
     lastFrameTime = startTime;
@@ -248,10 +313,8 @@ function endGame() {
     gameActive = false;
     const finalScore = Math.floor(currentTime / 100);
     finalScoreDisplay.textContent = finalScore;
-    
     const highScores = saveHighScore(currentTime);
     displayHighScores(highScores);
-    
     gameOverScreen.classList.add('show');
 }
 
