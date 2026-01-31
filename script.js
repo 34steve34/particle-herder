@@ -69,7 +69,9 @@ class Particle {
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < 1) return;
 
-        const maxDistance = Math.max(canvas.width, canvas.height) * 0.6;
+        // V2.0: Normalize by % screen diagonal (device/aspect agnostic)
+        const diagonal = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+        const maxDistance = diagonal * 0.4;
         const influenceStrength = Math.max(0, 1 - Math.pow(distance / maxDistance, 1.5));
         const turnFactor = influenceStrength * 0.45;
 
@@ -86,14 +88,14 @@ class Particle {
     }
 }
 
-// High scores – now stored as integers (×10)
+// High scores – stored as integers (×10)
 function getHighScores() {
     const scores = localStorage.getItem('particleHerderScores');
     return scores ? JSON.parse(scores) : [];
 }
 
 function saveHighScore(timeMs) {
-    const score = Math.floor(timeMs / 100); // e.g., 6532 ms → 653
+    const score = Math.floor(timeMs / 100);
     let scores = getHighScores();
     scores.push(score);
     scores.sort((a, b) => b - a);
@@ -183,7 +185,6 @@ function gameLoop(timestamp) {
     } else {
         currentTime = timestamp - startTime - pausedTime;
     }
-    // Show as SCORE: whole number ×10
     const score = Math.floor(currentTime / 100);
     timerDisplay.textContent = `SCORE: ${score}`;
 
@@ -205,6 +206,7 @@ function gameLoop(timestamp) {
     ctx.beginPath(); ctx.moveTo(canvas.width - WALL_MARGIN, 0); ctx.lineTo(canvas.width - WALL_MARGIN, canvas.height); ctx.stroke();
 
     ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(canvas.width / 2, canvas.height / 2, DEAD_ZONE_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
