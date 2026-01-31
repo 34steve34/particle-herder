@@ -22,7 +22,7 @@ const WALL_MARGIN = 20;
 let DEAD_ZONE_RADIUS = 0;
 const CLICK_PAUSE_DURATION = 300;
 const COOLDOWN_DURATION = 4000; // 4 seconds
-const COOLDOWN_RADIUS = 0; // set in resize
+let COOLDOWN_RADIUS = 0; // set in resize
 let cooldownZones = []; // {x, y, createdAt, element?}
 
 // Force portrait orientation hint (best-effort)
