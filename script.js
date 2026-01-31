@@ -86,15 +86,16 @@ class Particle {
     }
 }
 
-// High scores
+// High scores – now stored as integers (×10)
 function getHighScores() {
     const scores = localStorage.getItem('particleHerderScores');
     return scores ? JSON.parse(scores) : [];
 }
 
-function saveHighScore(time) {
+function saveHighScore(timeMs) {
+    const score = Math.floor(timeMs / 100); // e.g., 6532 ms → 653
     let scores = getHighScores();
-    scores.push(time);
+    scores.push(score);
     scores.sort((a, b) => b - a);
     scores = scores.slice(0, 5);
     localStorage.setItem('particleHerderScores', JSON.stringify(scores));
@@ -103,10 +104,10 @@ function saveHighScore(time) {
 
 function displayHighScores(scores) {
     highScoresDisplay.innerHTML = '<strong>TOP SCORES:</strong><br>' + 
-        scores.map((score, index) => `<div>${index + 1}. ${score.toFixed(1)}s</div>`).join('');
+        scores.map((score, index) => `<div>${index + 1}. ${score}</div>`).join('');
 }
 
-// Tap effect (reverted to original quick pulse)
+// Tap effect
 function showTapEffect(x, y) {
     const rect = canvas.getBoundingClientRect();
     tapEffect.style.left = (x - 20) + 'px';
@@ -116,7 +117,6 @@ function showTapEffect(x, y) {
     setTimeout(() => {
         tapEffect.style.animation = 'tapPulse 0.3s ease-out';
     }, 10);
-    // Hide immediately after animation (original behavior)
     setTimeout(() => {
         tapEffect.style.display = 'none';
     }, 300);
@@ -183,7 +183,9 @@ function gameLoop(timestamp) {
     } else {
         currentTime = timestamp - startTime - pausedTime;
     }
-    timerDisplay.textContent = (currentTime / 1000).toFixed(1) + 's';
+    // Show as SCORE: whole number ×10
+    const score = Math.floor(currentTime / 100);
+    timerDisplay.textContent = `SCORE: ${score}`;
 
     if (timestamp - lastSpawnTime >= SPAWN_INTERVAL) {
         const angle = Math.random() * Math.PI * 2;
@@ -229,6 +231,7 @@ function startGame() {
     pausedTime = 0;
     isPaused = false;
     gameOverScreen.classList.remove('show');
+    timerDisplay.textContent = 'SCORE: 0';
 
     const angle = Math.random() * Math.PI * 2;
     const distance = Math.random() * DEAD_ZONE_RADIUS;
@@ -241,10 +244,12 @@ function startGame() {
 
 function endGame() {
     gameActive = false;
-    const finalTime = currentTime / 1000;
-    finalScoreDisplay.textContent = finalTime.toFixed(1);
-    const highScores = saveHighScore(finalTime);
+    const finalScore = Math.floor(currentTime / 100);
+    finalScoreDisplay.textContent = finalScore;
+    
+    const highScores = saveHighScore(currentTime);
     displayHighScores(highScores);
+    
     gameOverScreen.classList.add('show');
 }
 

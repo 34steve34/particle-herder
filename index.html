@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Particle Herder</title>
-    <!-- Version 1.8 - Reverted tap effect to original quick pulse -->
+    <!-- Version 1.9 - SCORE display (whole number, no decimal) -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div id="ui">
-            <div id="timer">0.0s</div>
+            <div id="timer">SCORE: 0</div>  <!-- ← Changed initial text -->
         </div>
         <div id="gameOver">
             <h1>GAME OVER</h1>
-            <div class="score">Time: <span id="finalScore">0.0</span>s</div>
+            <div class="score">SCORE: <span id="finalScore">0</span></div>  <!-- ← No 's' or decimal -->
             <div class="highScores" id="highScores"></div>
             <button id="restartBtn">RESTART</button>
         </div>
