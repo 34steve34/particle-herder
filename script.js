@@ -46,7 +46,7 @@ class Particle {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        const speed = 5 + Math.random() * 12.5;
+        const speed = (5 + Math.random() * 12.5) * 1.3;  // +30% faster (was 5–17.5 → now 6.5–22.75 px/s)
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
