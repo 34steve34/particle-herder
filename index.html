@@ -2,20 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Particle Herder</title>
-    <!-- Version 1.9 - SCORE display (whole number, no decimal) -->
+    <!-- Version 2.1 - Blue temp outline zones (4s cooldown) + portrait lock -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div id="ui">
-            <div id="timer">SCORE: 0</div>  <!-- ← Changed initial text -->
+            <div id="timer">SCORE: 0</div>
         </div>
         <div id="gameOver">
             <h1>GAME OVER</h1>
-            <div class="score">SCORE: <span id="finalScore">0</span></div>  <!-- ← No 's' or decimal -->
+            <div class="score">SCORE: <span id="finalScore">0</span></div>
             <div class="highScores" id="highScores"></div>
             <button id="restartBtn">RESTART</button>
         </div>
