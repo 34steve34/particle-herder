@@ -301,8 +301,54 @@ function gameLoop(timestamp) {
     ctx.arc(canvas.width / 2, canvas.height / 2, DEAD_ZONE_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
 
-    // If explosion is active, draw it even if game is over
+    // Update game logic only if active
+    if (gameActive) {
+        if (isPaused) {
+            const pauseDuration = performance.now() - lastPauseStart;
+            if (pauseDuration <= CLICK_PAUSE_DURATION) {
+                currentTime = timestamp - startTime - pausedTime - pauseDuration;
+            }
+        } else {
+            currentTime = timestamp - startTime - pausedTime;
+        }
+        const score = Math.floor(currentTime / 100);
+        timerDisplay.textContent = `SCORE: ${score}`;
+
+        if (timestamp - lastSpawnTime >= SPAWN_INTERVAL) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * DEAD_ZONE_RADIUS;
+            const spawnX = canvas.width / 2 + Math.cos(angle) * distance;
+            const spawnY = canvas.height / 2 + Math.sin(angle) * distance;
+            particles.push(new Particle(spawnX, spawnY));
+            lastSpawnTime = timestamp;
+        }
+
+        // Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.update(deltaTime);
+            if (p.checkWallCollision()) {
+                // Create explosion at collision point
+                createExplosion(p.x, p.y);
+                gameActive = false; // Stop particle updates
+                
+                // Show explosion for a moment before game over
+                setTimeout(() => {
+                    explosionActive = false;
+                    endGame();
+                }, EXPLOSION_PAUSE_DURATION);
+                break; // Exit particle loop but continue to draw
+            }
+            p.draw();
+        }
+    } else {
+        // Game is over but still draw existing particles frozen in place
+        particles.forEach(p => p.draw());
+    }
+
+    // Draw explosion particles on top of everything if active
     if (explosionActive) {
+        console.log('Drawing', explosionParticles.length, 'explosion particles');
         for (let i = explosionParticles.length - 1; i >= 0; i--) {
             const ep = explosionParticles[i];
             if (!ep.update(deltaTime)) {
@@ -311,53 +357,6 @@ function gameLoop(timestamp) {
                 ep.draw();
             }
         }
-        // Keep animating during explosion
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-
-    if (!gameActive) {
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-
-    if (isPaused) {
-        const pauseDuration = performance.now() - lastPauseStart;
-        if (pauseDuration <= CLICK_PAUSE_DURATION) {
-            currentTime = timestamp - startTime - pausedTime - pauseDuration;
-        }
-    } else {
-        currentTime = timestamp - startTime - pausedTime;
-    }
-    const score = Math.floor(currentTime / 100);
-    timerDisplay.textContent = `SCORE: ${score}`;
-
-    if (timestamp - lastSpawnTime >= SPAWN_INTERVAL) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * DEAD_ZONE_RADIUS;
-        const spawnX = canvas.width / 2 + Math.cos(angle) * distance;
-        const spawnY = canvas.height / 2 + Math.sin(angle) * distance;
-        particles.push(new Particle(spawnX, spawnY));
-        lastSpawnTime = timestamp;
-    }
-
-    // Particles
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.update(deltaTime);
-        if (p.checkWallCollision()) {
-            // Create explosion at collision point
-            createExplosion(p.x, p.y);
-            gameActive = false; // Stop particle updates
-            
-            // Show explosion for a moment before game over
-            setTimeout(() => {
-                explosionActive = false;
-                endGame();
-            }, EXPLOSION_PAUSE_DURATION);
-            break; // Exit particle loop but continue to draw
-        }
-        p.draw();
     }
 
     requestAnimationFrame(gameLoop);
