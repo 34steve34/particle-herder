@@ -25,6 +25,11 @@ const COOLDOWN_DURATION = 4000; // 4 seconds
 let COOLDOWN_RADIUS = 0; // set in resize
 let cooldownZones = []; // {x, y, createdAt, element?}
 
+// Explosion effect
+let explosionParticles = [];
+let explosionActive = false;
+const EXPLOSION_PAUSE_DURATION = 800; // ms to show explosion before game over
+
 // Force portrait orientation hint (best-effort)
 if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('portrait').catch(() => {});
@@ -96,6 +101,38 @@ class Particle {
     }
 }
 
+// Explosion particle class
+class ExplosionParticle {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        const speed = 50 + Math.random() * 100;
+        const angle = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 1.0; // 0 to 1
+        this.decay = 0.015 + Math.random() * 0.015; // decay speed
+        this.size = 3 + Math.random() * 5;
+    }
+
+    update(deltaTime) {
+        this.x += this.vx * deltaTime;
+        this.y += this.vy * deltaTime;
+        this.vy += 200 * deltaTime; // gravity
+        this.life -= this.decay;
+        return this.life > 0;
+    }
+
+    draw() {
+        const alpha = Math.max(0, this.life);
+        ctx.fillStyle = `rgba(255, ${Math.floor(100 * alpha)}, 0, ${alpha})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `rgba(255, 100, 0, ${alpha})`;
+        ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        ctx.shadowBlur = 0;
+    }
+}
+
 // High scores (unchanged)
 function getHighScores() {
     const scores = localStorage.getItem('particleHerderScores');
@@ -160,6 +197,18 @@ function isInCooldownZone(tapX, tapY) {
         }
     }
     return false;
+}
+
+// Create explosion at collision point
+function createExplosion(x, y) {
+    explosionActive = true;
+    explosionParticles = [];
+    
+    // Create 30-50 explosion particles
+    const count = 30 + Math.floor(Math.random() * 20);
+    for (let i = 0; i < count; i++) {
+        explosionParticles.push(new ExplosionParticle(x, y));
+    }
 }
 
 // Handle tap/click
@@ -278,10 +327,29 @@ function gameLoop(timestamp) {
         const p = particles[i];
         p.update(deltaTime);
         if (p.checkWallCollision()) {
-            endGame();
+            // Create explosion at collision point
+            createExplosion(p.x, p.y);
+            gameActive = false; // Stop particle updates
+            
+            // Show explosion for a moment before game over
+            setTimeout(() => {
+                endGame();
+            }, EXPLOSION_PAUSE_DURATION);
             return;
         }
         p.draw();
+    }
+
+    // Draw explosion particles if active
+    if (explosionActive) {
+        for (let i = explosionParticles.length - 1; i >= 0; i--) {
+            const ep = explosionParticles[i];
+            if (!ep.update(deltaTime)) {
+                explosionParticles.splice(i, 1);
+            } else {
+                ep.draw();
+            }
+        }
     }
 
     requestAnimationFrame(gameLoop);
@@ -290,6 +358,8 @@ function gameLoop(timestamp) {
 function startGame() {
     gameActive = true;
     particles = [];
+    explosionParticles = [];
+    explosionActive = false;
     cooldownZones.forEach(z => z.element?.remove());
     cooldownZones = [];
     startTime = performance.now();
