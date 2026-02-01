@@ -106,28 +106,29 @@ class ExplosionParticle {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        const speed = 50 + Math.random() * 100;
+        const speed = 100 + Math.random() * 200; // Faster particles
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
         this.life = 1.0; // 0 to 1
-        this.decay = 0.015 + Math.random() * 0.015; // decay speed
-        this.size = 3 + Math.random() * 5;
+        this.decay = 0.01 + Math.random() * 0.01; // Slower decay = lasts longer
+        this.size = 6 + Math.random() * 8; // Bigger particles
     }
 
     update(deltaTime) {
         this.x += this.vx * deltaTime;
         this.y += this.vy * deltaTime;
-        this.vy += 200 * deltaTime; // gravity
+        this.vy += 300 * deltaTime; // More gravity
         this.life -= this.decay;
         return this.life > 0;
     }
 
     draw() {
         const alpha = Math.max(0, this.life);
-        ctx.fillStyle = `rgba(255, ${Math.floor(100 * alpha)}, 0, ${alpha})`;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `rgba(255, 100, 0, ${alpha})`;
+        // Brighter orange/yellow color
+        ctx.fillStyle = `rgba(255, ${Math.floor(150 + 105 * alpha)}, 0, ${alpha})`;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = `rgba(255, 200, 0, ${alpha})`;
         ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
         ctx.shadowBlur = 0;
     }
@@ -204,11 +205,13 @@ function createExplosion(x, y) {
     explosionActive = true;
     explosionParticles = [];
     
-    // Create 30-50 explosion particles
-    const count = 30 + Math.floor(Math.random() * 20);
+    // Create 50-80 explosion particles for a bigger effect
+    const count = 50 + Math.floor(Math.random() * 30);
     for (let i = 0; i < count; i++) {
         explosionParticles.push(new ExplosionParticle(x, y));
     }
+    
+    console.log('Explosion created at', x, y, 'with', count, 'particles');
 }
 
 // Handle tap/click
@@ -349,9 +352,10 @@ function gameLoop(timestamp) {
             
             // Show explosion for a moment before game over
             setTimeout(() => {
+                explosionActive = false;
                 endGame();
             }, EXPLOSION_PAUSE_DURATION);
-            return;
+            break; // Exit particle loop but continue to draw
         }
         p.draw();
     }
