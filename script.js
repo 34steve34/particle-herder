@@ -106,28 +106,27 @@ class ExplosionParticle {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        const speed = 100 + Math.random() * 200; // Faster particles
+        const speed = 80 + Math.random() * 120;
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.life = 1.0; // 0 to 1
-        this.decay = 0.003 + Math.random() * 0.003; // Much slower decay for mobile visibility
-        this.size = 8 + Math.random() * 10; // Even bigger particles
+        this.life = 1.0;
+        this.decay = 0.004; // Fixed slower decay
+        this.size = 2 + Math.random() * 3; // Much smaller: 2-5 pixels
     }
 
     update(deltaTime) {
         this.x += this.vx * deltaTime;
         this.y += this.vy * deltaTime;
-        this.vy += 300 * deltaTime; // More gravity
+        this.vy += 250 * deltaTime;
         this.life -= this.decay;
         return this.life > 0;
     }
 
     draw() {
         const alpha = Math.max(0, this.life);
-        // Brighter orange/yellow color
         ctx.fillStyle = `rgba(255, ${Math.floor(150 + 105 * alpha)}, 0, ${alpha})`;
-        ctx.shadowBlur = 20; // Stronger glow
+        ctx.shadowBlur = 8;
         ctx.shadowColor = `rgba(255, 200, 0, ${alpha})`;
         ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
         ctx.shadowBlur = 0;
@@ -328,12 +327,33 @@ function gameLoop(timestamp) {
             const p = particles[i];
             p.update(deltaTime);
             if (p.checkWallCollision()) {
+                console.log('COLLISION DETECTED at x:', p.x, 'y:', p.y);
+                console.log('Creating explosion...');
+                
+                // Add a bright screen flash to show collision happened
+                const flash = document.createElement('div');
+                flash.style.position = 'absolute';
+                flash.style.top = '0';
+                flash.style.left = '0';
+                flash.style.width = '100%';
+                flash.style.height = '100%';
+                flash.style.background = 'rgba(255, 100, 0, 0.5)';
+                flash.style.pointerEvents = 'none';
+                flash.style.zIndex = '999';
+                document.getElementById('gameContainer').appendChild(flash);
+                setTimeout(() => flash.remove(), EXPLOSION_PAUSE_DURATION);
+                
                 // Create explosion at collision point
                 createExplosion(p.x, p.y);
                 gameActive = false; // Stop particle updates
                 
+                console.log('gameActive set to false');
+                console.log('explosionActive:', explosionActive);
+                console.log('explosionParticles.length:', explosionParticles.length);
+                
                 // Show explosion for a moment before game over
                 setTimeout(() => {
+                    console.log('setTimeout callback - ending game');
                     explosionActive = false;
                     endGame();
                 }, EXPLOSION_PAUSE_DURATION);
