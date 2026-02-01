@@ -28,7 +28,7 @@ let cooldownZones = []; // {x, y, createdAt, element?}
 // Explosion effect
 let explosionParticles = [];
 let explosionActive = false;
-const EXPLOSION_PAUSE_DURATION = 800; // ms to show explosion before game over
+const EXPLOSION_PAUSE_DURATION = 1500; // Increased to 1.5 seconds for mobile visibility
 
 // Force portrait orientation hint (best-effort)
 if (screen.orientation && screen.orientation.lock) {
@@ -111,8 +111,8 @@ class ExplosionParticle {
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
         this.life = 1.0; // 0 to 1
-        this.decay = 0.01 + Math.random() * 0.01; // Slower decay = lasts longer
-        this.size = 6 + Math.random() * 8; // Bigger particles
+        this.decay = 0.003 + Math.random() * 0.003; // Much slower decay for mobile visibility
+        this.size = 8 + Math.random() * 10; // Even bigger particles
     }
 
     update(deltaTime) {
@@ -127,7 +127,7 @@ class ExplosionParticle {
         const alpha = Math.max(0, this.life);
         // Brighter orange/yellow color
         ctx.fillStyle = `rgba(255, ${Math.floor(150 + 105 * alpha)}, 0, ${alpha})`;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 20; // Stronger glow
         ctx.shadowColor = `rgba(255, 200, 0, ${alpha})`;
         ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
         ctx.shadowBlur = 0;
@@ -282,7 +282,7 @@ canvas.addEventListener('touchstart', handleTap);
 let lastFrameTime = 0;
 
 function gameLoop(timestamp) {
-    const deltaTime = (timestamp - lastFrameTime) / 1000;
+    const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
     lastFrameTime = timestamp;
 
     // Always clear and redraw background
