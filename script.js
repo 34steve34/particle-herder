@@ -281,6 +281,11 @@ canvas.addEventListener('touchstart', handleTap);
 let lastFrameTime = 0;
 
 function gameLoop(timestamp) {
+    // Initialize lastFrameTime on first call to avoid huge deltaTime
+    if (lastFrameTime === 0) {
+        lastFrameTime = timestamp;
+    }
+    
     const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
     lastFrameTime = timestamp;
 

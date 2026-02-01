@@ -1,4 +1,4 @@
-const CACHE_NAME = 'particle-herder-v1';
+const CACHE_NAME = 'particle-herder-v2';
 const urlsToCache = [
   './',
   './index.html',
