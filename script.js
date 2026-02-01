@@ -279,13 +279,44 @@ canvas.addEventListener('touchstart', handleTap);
 let lastFrameTime = 0;
 
 function gameLoop(timestamp) {
-    if (!gameActive) {
+    const deltaTime = (timestamp - lastFrameTime) / 1000;
+    lastFrameTime = timestamp;
+
+    // Always clear and redraw background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Walls
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(WALL_MARGIN, 0); ctx.lineTo(WALL_MARGIN, canvas.height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(canvas.width - WALL_MARGIN, 0); ctx.lineTo(canvas.width - WALL_MARGIN, canvas.height); ctx.stroke();
+
+    // Red center
+    ctx.strokeStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, DEAD_ZONE_RADIUS, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // If explosion is active, draw it even if game is over
+    if (explosionActive) {
+        for (let i = explosionParticles.length - 1; i >= 0; i--) {
+            const ep = explosionParticles[i];
+            if (!ep.update(deltaTime)) {
+                explosionParticles.splice(i, 1);
+            } else {
+                ep.draw();
+            }
+        }
+        // Keep animating during explosion
         requestAnimationFrame(gameLoop);
         return;
     }
 
-    const deltaTime = (timestamp - lastFrameTime) / 1000;
-    lastFrameTime = timestamp;
+    if (!gameActive) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
 
     if (isPaused) {
         const pauseDuration = performance.now() - lastPauseStart;
@@ -307,21 +338,6 @@ function gameLoop(timestamp) {
         lastSpawnTime = timestamp;
     }
 
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Walls
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(WALL_MARGIN, 0); ctx.lineTo(WALL_MARGIN, canvas.height); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(canvas.width - WALL_MARGIN, 0); ctx.lineTo(canvas.width - WALL_MARGIN, canvas.height); ctx.stroke();
-
-    // Red center
-    ctx.strokeStyle = '#ff0000';
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height / 2, DEAD_ZONE_RADIUS, 0, Math.PI * 2);
-    ctx.stroke();
-
     // Particles
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -338,18 +354,6 @@ function gameLoop(timestamp) {
             return;
         }
         p.draw();
-    }
-
-    // Draw explosion particles if active
-    if (explosionActive) {
-        for (let i = explosionParticles.length - 1; i >= 0; i--) {
-            const ep = explosionParticles[i];
-            if (!ep.update(deltaTime)) {
-                explosionParticles.splice(i, 1);
-            } else {
-                ep.draw();
-            }
-        }
     }
 
     requestAnimationFrame(gameLoop);
