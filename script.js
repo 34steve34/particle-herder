@@ -330,19 +330,6 @@ function gameLoop(timestamp) {
                 console.log('COLLISION DETECTED at x:', p.x, 'y:', p.y);
                 console.log('Creating explosion...');
                 
-                // Add a bright screen flash to show collision happened
-                const flash = document.createElement('div');
-                flash.style.position = 'absolute';
-                flash.style.top = '0';
-                flash.style.left = '0';
-                flash.style.width = '100%';
-                flash.style.height = '100%';
-                flash.style.background = 'rgba(255, 100, 0, 0.5)';
-                flash.style.pointerEvents = 'none';
-                flash.style.zIndex = '999';
-                document.getElementById('gameContainer').appendChild(flash);
-                setTimeout(() => flash.remove(), EXPLOSION_PAUSE_DURATION);
-                
                 // Create explosion at collision point
                 createExplosion(p.x, p.y);
                 gameActive = false; // Stop particle updates
